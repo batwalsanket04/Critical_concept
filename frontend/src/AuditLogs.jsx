@@ -1,33 +1,60 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
+import { useContext } from "react";
+import { AuditContext } from "./Context/AuditProvider";
 
 const AuditLogs = () => {
 
     const [audit, setAudit] = useState([]);
 
-
-    useEffect(() => {
-
-        const getAudits = async () => {
-            try {
-
-                const res = await axios.get(
-                    "http://localhost:4000/api/log/audit-log"
-                );
-                console.log(res.data)
-                setAudit(res.data.logs);
-
-            } catch (error) {
-
-                console.log(error);
-
-            }
-        };
+    const {search,action}=useContext(AuditContext);
 
 
-        getAudits();
 
-    }, []);
+  useEffect(()=>{
+
+const timer=setTimeout(()=>{
+
+
+const getAudits = async()=>{
+
+try{
+
+const res = await axios.get(
+"http://localhost:4000/api/log/audit-log",
+{
+params:{
+search,
+action
+}
+}
+);
+
+
+setAudit(res.data.logs);
+
+
+}
+catch(error){
+
+console.log(error);
+
+}
+
+}
+
+
+getAudits();
+
+
+},500);
+
+
+
+return ()=>clearTimeout(timer);
+
+
+},[search,action]);
 
 
     return (

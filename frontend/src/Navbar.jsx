@@ -1,10 +1,14 @@
 import React from 'react'
+import { useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom'
+import { AuditContext } from './Context/AuditProvider';
 
 const Navbar = () => {
 
     const nav=useNavigate();
     const location=useLocation()
+
+    const {search,setSearch,action,setAction}=useContext(AuditContext)
 
 
     const logout = () => {
@@ -15,6 +19,31 @@ const Navbar = () => {
   localStorage.removeItem("accessToken"); // or localStorage.clear();
   nav("/", { replace: true });
 };
+
+
+const handleFilter=async()=>{
+
+    const res=await axios.get(
+`http://localhost:4000/api/log/audit-log`,
+{
+params:{
+search,
+action
+}
+}
+);
+
+console.log(res.data.logs)
+
+window.dispatchEvent(
+new CustomEvent(
+"auditUpdate",
+{
+detail:res.data.logs
+}
+)
+);
+}
 
   return (
     <div>
@@ -28,6 +57,78 @@ const Navbar = () => {
                     <path d="m8.75 11.3 6.75 3.884 6.75-3.885M8.75 34.58v-7.755L2 22.939m27 0-6.75 3.885v7.754M2.405 15.408 15.5 22.954l13.095-7.546M15.5 38V22.939M29 28.915V16.962a2.98 2.98 0 0 0-1.5-2.585L17 8.4a3.01 3.01 0 0 0-3 0L3.5 14.377A3 3 0 0 0 2 16.962v11.953A2.98 2.98 0 0 0 3.5 31.5L14 37.477a3.01 3.01 0 0 0 3 0L27.5 31.5a3 3 0 0 0 1.5-2.585" stroke="#4F39F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </a>
+
+            <input
+
+className="border p-2 rounded"
+
+placeholder="Search user..."
+
+value={search}
+
+onChange={(e)=>{
+
+setSearch(e.target.value);
+
+handleFilter();
+
+}}
+
+/>
+
+<select
+
+className="border p-2 rounded"
+
+value={action}
+
+onChange={(e)=>{
+
+setAction(e.target.value);
+
+handleFilter();
+
+}}
+
+>
+
+
+<option value="">
+All Actions
+</option>
+
+
+<option value="LOGIN">
+LOGIN
+</option>
+
+
+<option value="READ">
+READ
+</option>
+
+
+<option value="CREATE">
+CREATE
+</option>
+
+
+<option value="UPDATE">
+UPDATE
+</option>
+
+
+<option value="DELETE">
+DELETE
+</option>
+
+
+<option value="DELETE_ALL">
+DELETE ALL
+</option>
+
+
+</select>
 
 
             {
