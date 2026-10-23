@@ -1,7 +1,7 @@
 const pool = require("../Config/Connection");
 
 
-const createAuditLog = async(data)=>{
+const createAuditLog = async(client,data)=>{
 
     const {
         user_id,
@@ -14,7 +14,7 @@ const createAuditLog = async(data)=>{
     } = data;
 
 
-    await pool.query(
+    await client.query(
         `
         INSERT INTO audit_logs
         (
@@ -31,13 +31,13 @@ const createAuditLog = async(data)=>{
 
         `,
         [
-            user_id,
-            action,
-            entity,
-            entity_id,
-            old_data,
-            new_data,
-            ip_address
+            data.user_id,
+data.action,
+data.entity,
+data.entity_id,
+data.old_data,
+JSON.stringify(data.new_data),
+data.ip_address
         ]
     );
 

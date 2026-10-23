@@ -1,8 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const cookieParser =require("cookie-parser")
+const logger=require("./Config/Logger.js")
+const apiLimiter=require("./middleware/rateLimiter.js")
 const app = express();
 
+const helmet=require('helmet')
 const PORT = process.env.PORT || 4000;
 
 
@@ -14,9 +17,13 @@ app.use(cors(
     }
 ));
 
-app.use(cookieParser())
-app.use(express.json());
+app.use(cookieParser());
+app.use(apiLimiter)
+app.use(helmet())
+app.use(express.json({limit:"10kb"}));
 app.use(express.urlencoded({extended:true}));
+
+
 
 //routes
  require("./Config/Connection.js")
@@ -48,5 +55,5 @@ app.use(require("./middleware/error.middleware.js"));
 
 // Server
 app.listen(PORT, ()=>{
-    console.log(`Server running at http://localhost:${PORT}`);
+    logger.info(`Server running at http://localhost:${PORT}`);
 });

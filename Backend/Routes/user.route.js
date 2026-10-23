@@ -1,4 +1,5 @@
 const express = require("express");
+const authLimiter=require("../middleware/authLimiter")
 const {
   Singup,
   login,
@@ -12,17 +13,30 @@ const {
 const checkPermission = require("../middleware/check.permission");
 const authMiddleware = require("../middleware/auth.middleware");
 const auditLogger = require("../middleware/auditLogger");
+const validate=require('../middleware/validate.middleware');
+const { signupSchema } = require("../Validation/user.validation");
 const router = express.Router();
 
 router.post(
-  "/signup",
-  auditLogger({
-    action: "UPDATE",
-    entity: "users",
-  }),
-  Singup,
+
+"/signup",
+
+authLimiter,
+
+validate(signupSchema),
+
+auditLogger({
+
+ action:"CREATE",
+
+ entity:"users"
+
+}),
+
+Singup
+
 );
-router.post("/login", login);
+router.post("/login",authLimiter, login);
 router.get("/getalldata", authMiddleware, getAllData);
 router.get("/users/:id", getUserById);
 router.put(

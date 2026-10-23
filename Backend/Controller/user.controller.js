@@ -4,86 +4,113 @@ const JWT=require('jsonwebtoken')
 const asyncHandler=require("../middleware/asyncHandler.js")
 const { createAuditLog } = require("./audit.controller.js");
 
-const Singup=async(req,res)=>{
+const Singup = async(req,res,next)=>{
+
+const client = await pool.connect();
+
 
     try{
 
-  const {fname, role, email, password}=req.body;
-      console.log("BODY:", req.body);
 
-        if(!fname || !role || !email || !password) return res.status(400).json({message:"All Field required"})
+        const {
+            fname,
+            role,
+            email,
+            password
+        } = req.body;
 
-        const PassRegex= /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        await client.query("BEGIN")
 
-        if(!PassRegex.test(password)) return res.status(400).json({message:"Password must be lowercase,uppercase,symbols and numbers"})
-        
-        
-          const userExist = await pool.query(
+
+        console.log("BODY:",req.body);
+
+
+        const userExist = await client.query(
 
             "SELECT * FROM users WHERE email=$1",
+
             [email]
+
         );
-        
+
+
         if(userExist.rows.length > 0){
+            await client.query("ROLLBACK");
+
             return res.status(400).json({
                 message:"User already exists"
             });
-        }
-        
-        const hashPass=await bcrypt.hash(password,10);
 
-         const result = await pool.query(
-            `INSERT INTO users(fname,role,email,password)
-             VALUES($1,$2,$3,$4)
-             RETURNING id,fname,role,email`,
-          [
-    fname,
-    role,
-    email,
-    hashPass
-]
+        }
+
+
+        const hashPass = await bcrypt.hash(password,10);
+
+
+        const result = await client.query(
+            `
+            INSERT INTO users
+            (
+            fname,
+            role,
+            email,
+            password
+            )
+
+            VALUES($1,$2,$3,$4)
+
+            RETURNING id,fname,role,email
+            `,
+            [
+                fname,
+                role,
+                email,
+                hashPass
+            ]
         );
 
-        if (result.rows.length === 0) {
-            return res.status(500).json({message:"Default user role is not configured"});
-        }
+ 
 
 
- await createAuditLog({
+        await createAuditLog({
 
-    user_id:result.rows[0].id,
+            user_id:result.rows[0].id,
 
-    action:"CREATE",
+            action:"CREATE",
 
-    entity:"users",
+            entity:"users",
 
-    entity_id:result.rows[0].id,
+            entity_id:result.rows[0].id,
 
-    old_data:null,
+            old_data:null,
 
-    new_data:result.rows[0],
+            new_data:result.rows[0],
 
-    ip_address:req.ip
+            ip_address:req.ip
 
-});
+        });
 
-        res.status(201).json({message:"Signup Successfully..",
+        await client.query("COMMIT");
+
+        res.status(201).json({
+
+            message:"Signup Successfully",
+
             user:result.rows[0]
+
         });
 
 
-        
-
-
-
-
-    }catch(error)
-    {
-      res.status(500).json({
-        error:error.message
-      });
-
     }
+    catch(error){
+        
+        await client.query("ROLLBACK");
+        next(error);
+
+    }finally{
+        client.release();
+    }
+
 }
 
 
