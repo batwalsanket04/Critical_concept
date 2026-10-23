@@ -2,7 +2,7 @@ const rateLimiter=require('express-rate-limit')
 
 const apiLimiter=rateLimiter({
     windowMs:15 * 60 * 1000, 
-    max:20,
+    max:1000,
 
 
      message:{

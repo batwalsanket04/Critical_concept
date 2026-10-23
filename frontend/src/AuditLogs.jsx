@@ -2,12 +2,14 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useContext } from "react";
 import { AuditContext } from "./Context/AuditProvider";
+import { Loader2 } from "lucide-react";
+import { data } from "react-router-dom";
 
 const AuditLogs = () => {
 
     const [audit, setAudit] = useState([]);
 
-    const {search,action}=useContext(AuditContext);
+    const {search,action,loading,setLoading}=useContext(AuditContext);
 
 
 
@@ -19,6 +21,8 @@ const timer=setTimeout(()=>{
 const getAudits = async()=>{
 
 try{
+
+    setLoading(true)
 
 const res = await axios.get(
 "http://localhost:4000/api/log/audit-log",
@@ -40,6 +44,11 @@ catch(error){
 console.log(error);
 
 }
+finally{
+    setTimeout(()=>{
+        setLoading(false)
+    },1000)
+}
 
 }
 
@@ -57,8 +66,36 @@ return ()=>clearTimeout(timer);
 },[search,action]);
 
 
-    return (
-        <div className="p-6">
+    return (<>
+
+    {
+    loading ?
+
+        (<div className="flex flex-col justify-center items-center h-80 gap-3">
+
+          <Loader2
+            size={45}
+            className="animate-spin text-indigo-600"
+          />
+
+          <p className="text-gray-500">
+            Loading users...
+          </p>
+
+        </div>):audit.length===0?(
+
+            <div className="flex justify-center items-center h-60">
+
+          <p className="text-lg text-gray-500">
+            No Audit Found
+          </p>
+
+        </div>
+
+
+        ):(
+
+            <div className="p-6">
 
             <h1 className="text-2xl font-bold mb-5">
                 Audit Logs
@@ -109,9 +146,8 @@ return ()=>clearTimeout(timer);
                     <tbody>
 
 
-                    {
-                        audit.length > 0 ?
-
+                
+{
                         audit.map((log)=>(
 
                             <tr 
@@ -160,19 +196,12 @@ return ()=>clearTimeout(timer);
                             </tr>
 
                         ))
-
-                        :
-
-                        <tr>
-                            <td 
-                              colSpan="7"
-                              className="text-center p-5"
-                            >
-                                No Audit Logs Found
-                            </td>
-                        </tr>
-
                     }
+
+                        
+
+                     
+                    
 
 
                     </tbody>
@@ -184,6 +213,11 @@ return ()=>clearTimeout(timer);
 
 
         </div>
+
+        )
+}
+    </>
+        
     );
 };
 

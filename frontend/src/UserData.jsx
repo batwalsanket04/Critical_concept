@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { data, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { AuditContext } from "./Context/AuditProvider";
+import {Loader2} from "lucide-react"
+
 
 const UserData = () => {
   const [data, setData] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const [page,setPage]=useState(1);
   const [limit,setLimit]=useState(5)
+ const {loading,setLoading}=useContext(AuditContext)
+
 const [pagination, setPagination] = useState({
   currentPage: 1,
   totalPages: 1,
@@ -22,6 +27,8 @@ useEffect(() => {
   const getUsers = async () => {
 
     try {
+
+      setLoading(true)
     
 
      const token = localStorage.getItem("accessToken");
@@ -57,6 +64,10 @@ console.log(token)
           "Unable to load users"
       });
 
+    }finally{
+      setTimeout(() => {
+    setLoading(false);
+  }, 1000); // 1.5 seconds
     }
 
   };
@@ -71,8 +82,7 @@ console.log(token)
     //   return;
     // }
 
-     console.log("deleteAll function called========================");
-
+    
   if (user?.role !== "admin") {
     console.log("Not admin");
     return;
@@ -127,7 +137,36 @@ console.log(token)
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <>
+    {
+    loading ?
+      (
+        <div className="flex flex-col justify-center items-center h-80 gap-3">
+
+          <Loader2
+            size={45}
+            className="animate-spin text-indigo-600"
+          />
+
+          <p className="text-gray-500">
+            Loading users...
+          </p>
+
+        </div>
+      ):data.length===0?(
+
+        <div className="flex justify-center items-center h-60">
+
+          <p className="text-lg text-gray-500">
+            No Users Found
+          </p>
+
+        </div>
+
+      ):(
+         <div className="min-h-screen bg-gray-50 p-6">
+
+       
       <div className="relative overflow-hidden rounded-xl bg-white shadow-md">
         {loadError && (
           <p className="p-4 text-red-600" role="alert">
@@ -148,6 +187,7 @@ console.log(token)
             </tr>
           </thead>
           <tbody>
+            
             {data.map((listedUser) => (
               <tr
                 key={listedUser.id}
@@ -235,6 +275,10 @@ Next
       
       </div>
     </div>
+      )
+    }
+</>
+   
   );
 };
 

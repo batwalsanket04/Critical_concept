@@ -14,7 +14,7 @@ const checkPermission = require("../middleware/check.permission");
 const authMiddleware = require("../middleware/auth.middleware");
 const auditLogger = require("../middleware/auditLogger");
 const validate=require('../middleware/validate.middleware');
-const { signupSchema } = require("../Validation/user.validation");
+const { signupSchema, loginSchema } = require("../Validation/user.validation");
 const router = express.Router();
 
 router.post(
@@ -36,7 +36,7 @@ auditLogger({
 Singup
 
 );
-router.post("/login",authLimiter, login);
+router.post("/login",authLimiter,validate(loginSchema), login);
 router.get("/getalldata", authMiddleware, getAllData);
 router.get("/users/:id", getUserById);
 router.put(

@@ -11,8 +11,9 @@ export const AuditProvider = ({children}) => {
 
     const [search,setSearch]=useState("");
     const [action,setAction]=useState("")
+    const [loading,setLoading]=useState(false)
 
-    const value={search,setSearch,action,setAction}
+    const value={search,setSearch,action,setAction,loading,setLoading}
 
 
   return (

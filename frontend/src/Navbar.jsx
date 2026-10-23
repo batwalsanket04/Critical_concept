@@ -52,10 +52,12 @@ detail:res.data.logs
 
         <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300 bg-white relative transition-all">
  
-
+ 
             <input
 
-className="border p-2 rounded"
+className={`border rounded-lg px-3 py-2 w-48 ${
+location.pathname !== "/audit-logs" && "invisible"
+}`}
 
 placeholder="Search user..."
 
@@ -73,7 +75,9 @@ handleFilter();
 
 <select
 
-className="border p-2 rounded"
+className={`border rounded-lg px-3 py-2 w-32 ${
+location.pathname !== "/audit-logs" && "invisible"
+}`}
 
 value={action}
 

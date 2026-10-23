@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import axios from 'axios'
 import { useNavigate } from "react-router-dom";
 import {toast} from 'react-toastify'
+import AuditProvider, { AuditContext } from "./Context/AuditProvider";
+
 
 const Home = () => {
   const nav=useNavigate()
@@ -12,6 +14,8 @@ const Home = () => {
     email: "",
     password: "",
   });
+
+  const {loading,setLoading}=useContext(AuditContext)
 
   const [errors,setErrors]=useState({})
 
@@ -60,6 +64,7 @@ const handleSubmit = async (e) => {
 e.preventDefault();
 
 setErrors({});
+setLoading(true)
 
 try {
 
@@ -119,6 +124,8 @@ error.message;
 
 toast.error(message);
 
+}finally{
+  setLoading(false)
 }
 
 };
@@ -257,9 +264,27 @@ errors.password && (
           </span>
         </p>
       )}
-      <button className="bg-indigo-500 hover:bg-indigo-600 transition-all text-white w-full py-2 rounded-md cursor-pointer">
-        {state === "register" ? "Create Account" : "Login"}
-      </button>
+      <button
+
+disabled={loading}
+
+className={`bg-indigo-500 hover:bg-indigo-600 transition-all text-white w-full py-2 rounded-md cursor-pointer
+${loading ? "opacity-50 cursor-not-allowed" : ""}
+`}
+
+>
+
+{
+ loading 
+ ?
+ "Please wait..."
+ :
+ state === "register"
+ ? "Create Account"
+ : "Login"
+}
+
+</button>
     </form>
   );
 };
