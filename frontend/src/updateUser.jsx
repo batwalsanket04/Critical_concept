@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import {toast} from 'react-toastify'
 import { useNavigate, useParams } from 'react-router-dom'
 
  
@@ -75,7 +76,7 @@ const UpdateUser = () => {
         form
       );
 
-      alert(res.data.message);
+      toast.success(res.data.message);
 
       navigate("/dashboard");
 
@@ -87,6 +88,8 @@ const UpdateUser = () => {
         error.response?.data?.error ||
         error.message
       );
+
+      toast.error(error.message)
 
     }
 

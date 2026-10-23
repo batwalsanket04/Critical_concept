@@ -18,31 +18,28 @@ const auditLogger = ({
             res.json = async function(data){
 
 
-                await createAuditLog({
+               await createAuditLog(null,{
 
-                    user_id: req.user?.id || null,
+    user_id: req.user?.id || null,
 
-                    action: action,
+    action: action,
 
-                    entity: entity,
+    entity: entity,
 
-                    entity_id:
-                    req.params.id || 
-                    data?.user?.id ||
-                    null,
+    entity_id:
+        req.params.id ||
+        data?.user?.id ||
+        null,
 
+    old_data:
+        req.oldData || null,
 
-                    old_data:
-                    req.oldData || null,
+    new_data:
+        data?.user || null,
 
+    ip_address:req.ip
 
-                    new_data:
-                    data?.user || null,
-
-
-                    ip_address:req.ip
-
-                });
+});
 
 
                 return originalJson.call(this,data);

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from 'axios'
 import { useNavigate } from "react-router-dom";
+import {toast} from 'react-toastify'
 
 const Home = () => {
   const nav=useNavigate()
@@ -12,6 +13,41 @@ const Home = () => {
     password: "",
   });
 
+  const [errors,setErrors]=useState({})
+
+  const handleErrors = (error)=>{
+
+    const backendErrors = error.response?.data?.errors;
+
+    if(backendErrors){
+
+        const newErrors={};
+
+        backendErrors.forEach(err=>{
+
+            if(err.includes("Name")){
+                newErrors.fname = err;
+            }
+
+            if(err.includes("Role")){
+                newErrors.role = err;
+            }
+
+            if(err.includes("Email")){
+                newErrors.email = err;
+            }
+
+            if(err.includes("Password")){
+                newErrors.password = err;
+            }
+
+        });
+
+        setErrors(newErrors);
+    }
+
+};
+
   const formHandle=(e)=>{
 
     const { name, value } = e.target;
@@ -19,87 +55,72 @@ const Home = () => {
     setForm({...form ,[name]:value})
   }
 
- const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
 
-  e.preventDefault();
+e.preventDefault();
 
-  try {
+setErrors({});
 
-    let res;
+try {
 
-    if(state === "register"){
-
-      // Signup API
-      res = await axios.post(
-        "http://localhost:4000/api/signup",
-        form
-      );
-
-     setForm({
-  fname: "",
-  role:"",
-  email: "",
-  password: "",
-})
+let res;
 
 
-    }else{
+if(state==="register"){
 
-      // Login API
-      res = await axios.post(
-  "http://localhost:4000/api/login",
-  {
-    email: form.email,
-    password: form.password
-  },
-  {
-    withCredentials:true
-  }
+res = await axios.post(
+"http://localhost:4000/api/signup",
+form
 );
-    }
+
+}
+else{
+
+res = await axios.post(
+"http://localhost:4000/api/login",
+{
+email:form.email,
+password:form.password
+},
+{
+withCredentials:true
+}
+);
+
+}
 
 
-    if(state === "login"){
-     const accessToken = res.data.accessToken ?? res.data.token;
+if(state==="login"){
 
-      if (typeof accessToken !== "string" || !accessToken.trim()) {
-        throw new Error("Login response did not include an access token.");
-      }
+const token=res.data.token;
 
 localStorage.setItem(
-  "accessToken",
-  accessToken
+"accessToken",
+token
 );
 
-localStorage.setItem(
-  "user",
-  JSON.stringify(res.data.user)
-);
+nav("/dashboard");
 
-      setForm({
-        fname: "",
-        email: "",
-        password: "",
-      });
+}
 
-      alert(res.data.message);
-      nav('/dashboard');
-      return;
-    }
-
-    alert(res.data.message);
-
-  } catch(error){
-
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message;
+toast.success(res.data.message);
 
 
-    alert(message);
+}
+catch(error){
 
-  }
+handleErrors(error);
+
+
+const message =
+error.response?.data?.message ||
+error.message;
+
+
+toast.error(message);
+
+}
+
 };
 
 
@@ -112,15 +133,24 @@ localStorage.setItem(
       {state === "register" && (
         <div className="w-full">
           <p>Name</p>
-          <input
-            onChange={formHandle}
-            name="fname"
-            value={form.fname}
-            placeholder="type here"
-            className="border border-gray-200 rounded w-full p-2 mt-1 outline-indigo-500"
-            type="text"
-            required
-          />
+         <input
+onChange={formHandle}
+name="fname"
+value={form.fname}
+className="border border-gray-200 rounded w-full p-2 mt-1 outline-indigo-500"
+type="text"
+/>
+
+
+{
+errors.fname && (
+
+<p className="text-red-500 text-sm mt-1">
+{errors.fname}
+</p>
+
+)
+}
 
         </div>
 
@@ -131,42 +161,80 @@ localStorage.setItem(
   <div className="w-full">
     <p>Role</p>
 
-    <select
-      name="role"
-      value={form.role}
-      onChange={formHandle}
-      className="border border-gray-200 rounded w-full p-2 mt-1 outline-indigo-500"
-      required
-    >
-      <option value="">Select Role</option>
-      <option value="admin">Admin</option>
-      <option value="user">User</option>
-    </select>
+<select
+name="role"
+value={form.role}
+onChange={formHandle}
+className="border border-gray-200 rounded w-full p-2 mt-1"
+>
+
+<option value="">
+Select Role
+</option>
+
+<option value="admin">
+Admin
+</option>
+
+<option value="user">
+User
+</option>
+
+</select>
+
+
+{
+errors.role && (
+
+<p className="text-red-500 text-sm mt-1">
+{errors.role}
+</p>
+
+)
+}
   </div>
 )}
       <div className="w-full ">
         <p>Email</p>
-        <input
-        name="email"
-          onChange={formHandle}
-          value={form.email}
-          placeholder="type here"
-          className="border border-gray-200 rounded w-full p-2 mt-1 outline-indigo-500"
-          type="email"
-          required
-        />
+       <input
+name="email"
+onChange={formHandle}
+value={form.email}
+type="email"
+className="border border-gray-200 rounded w-full p-2 mt-1"
+/>
+
+
+{
+errors.email && (
+
+<p className="text-red-500 text-sm mt-1">
+{errors.email}
+</p>
+
+)
+}
       </div>
       <div className="w-full ">
         <p>Password</p>
-        <input
-          onChange={formHandle}
-          name="password"
-          value={form.password}
-          placeholder="type here"
-          className="border border-gray-200 rounded w-full p-2 mt-1 outline-indigo-500"
-          type="password"
-          required
-        />
+       <input
+name="password"
+onChange={formHandle}
+value={form.password}
+type="password"
+className="border border-gray-200 rounded w-full p-2 mt-1"
+/>
+
+
+{
+errors.password && (
+
+<p className="text-red-500 text-sm mt-1">
+{errors.password}
+</p>
+
+)
+}
       </div>
       {state === "register" ? (
         <p>

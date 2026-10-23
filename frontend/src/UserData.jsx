@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const UserData = () => {
   const [data, setData] = useState([]);
@@ -80,7 +81,7 @@ console.log(token)
   console.log("Admin");
 
     if (data.length === 0) {
-      alert("There are no users to delete.");
+      toast.warning("There are no users to delete.");
       return;
     }
 
@@ -103,9 +104,9 @@ console.log(token)
  
 
       setData([]);
-      alert(response.data.message);
+      toast.success(response.data.message);
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.message ||
         error.response?.data?.error ||
         error.message
@@ -118,10 +119,10 @@ console.log(token)
       const response = await axios.delete(
         `http://localhost:4000/api/users/${id}`
       );
-      alert(response.data.message);
+      toast.success(response.data.message);
       setData((currentData) => currentData.filter((user) => user.id !== id));
     } catch (error) {
-      alert(error.response?.data?.message || error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 

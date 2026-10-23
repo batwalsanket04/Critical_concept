@@ -2,7 +2,7 @@ const pool= require("../Config/Connection.js")
 const bcrypt=require('bcrypt')
 const JWT=require('jsonwebtoken')
 const asyncHandler=require("../middleware/asyncHandler.js")
-const { createAuditLog } = require("./audit.controller.js");
+const {createAuditLog}  = require("./audit.controller.js");
 
 const Singup = async(req,res,next)=>{
 
@@ -72,23 +72,15 @@ const client = await pool.connect();
  
 
 
-        await createAuditLog({
-
-            user_id:result.rows[0].id,
-
-            action:"CREATE",
-
-            entity:"users",
-
-            entity_id:result.rows[0].id,
-
-            old_data:null,
-
-            new_data:result.rows[0],
-
-            ip_address:req.ip
-
-        });
+        await createAuditLog(client, {
+    user_id: result.rows[0].id,
+    action: "CREATE",
+    entity: "users",
+    entity_id: result.rows[0].id,
+    old_data: null,
+    new_data: result.rows[0],
+    ip_address: req.ip
+});
 
         await client.query("COMMIT");
 
@@ -115,8 +107,13 @@ const client = await pool.connect();
 
 
 const login=async(req,res)=>{
+
+
+    const client = await pool.connect();
     try
     {
+
+        await client.query("BEGIN")
 
         const {email,password}=req.body;
 
@@ -175,52 +172,44 @@ const login=async(req,res)=>{
         }
     );
 
-
-        await createAuditLog({
-           
-    user_id:user.id,
-
-    action:"LOGIN",
-
-    entity:"users",
-
-    entity_id:null,
-
-    old_data:null,
-
-    new_data:null,
-
-    ip_address:req.ip
-
+await createAuditLog(client,{
+   user_id:user.id,
+   action:"LOGIN",
+   entity:"users",
+   entity_id:null,
+   old_data:null,
+   new_data:null,
+   ip_address:req.ip
 });
 
-    res.status(200).json({
-        message:"login Successfully.",
-        success:true,
-        token,
+await client.query("COMMIT");
 
-        user:{
-            id:user.id,
-            fname:user.fname,
-            email:user.email,
-            role:user.role
-
-        }
-    })
-
-    
-
+res.status(200).json({
+    message:"login Successfully.",
+    success:true,
+    token,
+    user:{
+        id:user.id,
+        fname:user.fname,
+        email:user.email,
+        role:user.role
+    }
+});
 
 
     }catch(error)
     {
          console.log(error);
+             await client.query("ROLLBACK");
 
         res.status(500).json({
             error:error.message
         })
 
     }
+    finally{
+    client.release();
+}
 }
 
 const refreshToken = async(req,res)=>{
@@ -289,7 +278,9 @@ const refreshToken = async(req,res)=>{
 
 
 const getAllData = asyncHandler(async(req,res)=>{
+    const client = await pool.connect();
 
+    try{
     let {page,limit}=req.query;
 
 
@@ -300,8 +291,10 @@ const getAllData = asyncHandler(async(req,res)=>{
     const offset = (page - 1) * limit;
 
 
+
+await client.query("BEGIN");
     // Get users
-    const users = await pool.query(
+    const users = await client.query(
         `
         SELECT id,fname,email,role,created_at
         FROM users
@@ -316,7 +309,7 @@ const getAllData = asyncHandler(async(req,res)=>{
 
 
     // Count total users
-    const total = await pool.query(
+    const total = await client.query(
         `
         SELECT COUNT(*) 
         FROM users
@@ -332,9 +325,9 @@ const getAllData = asyncHandler(async(req,res)=>{
     );
 
 
-    await createAuditLog({
+    await createAuditLog(client,{
 
-    user_id:req.user?.id || null,
+   user_id:req.user?.id || null,
 
     action:"READ",
 
@@ -349,6 +342,8 @@ const getAllData = asyncHandler(async(req,res)=>{
     ip_address:req.ip
 
 });
+
+        await client.query("COMMIT");
 
 
     res.status(200).json({
@@ -366,7 +361,14 @@ const getAllData = asyncHandler(async(req,res)=>{
         }
 
     });
+}catch(error)
+{
+await client.query("ROLLBACK");
+}
 
+finally{
+client.release();
+}
     
 
 
@@ -374,6 +376,7 @@ const getAllData = asyncHandler(async(req,res)=>{
 
 
 const getUserById = async(req,res)=>{
+    const client = await pool.connect();
     try{
 
         const { id } = req.params;
@@ -386,7 +389,7 @@ const getUserById = async(req,res)=>{
         }
 
 
-       const oldUser = await pool.query(
+       const oldUser = await client.query(
 "SELECT * FROM users WHERE id=$1",
 [id]
 );
@@ -400,7 +403,7 @@ if(oldUser.rows.length === 0){
 
 }
 
-const result = await pool.query(`
+const result = await client.query(`
 SELECT id, fname, role, email
 FROM users
 WHERE id=$1
@@ -425,9 +428,11 @@ WHERE id=$1
 }
 
 const updateUser = async(req,res)=>{
+    const client = await pool.connect();
     try{
+        await client.query("BEGIN");
         const { id } = req.params;
-        const oldData = await pool.query(
+        const oldData = await client.query(
 "SELECT * FROM users WHERE id=$1",
 [id]
 );
@@ -437,18 +442,12 @@ if(oldData.rows.length===0){
    message:"User not found"
  });
 }
+
+const {fname,email}=req.body;
  
-        const { fname, email } = req.body;
+        
 
-        if(!/^\d+$/.test(id)){
-            return res.status(400).json({message:"Invalid user id"});
-        }
-
-        if(!fname || !email){
-            return res.status(400).json({message:"Name and email are required"});
-        }
-
-        const result = await pool.query(
+        const result = await client.query(
             `UPDATE users
              SET fname=$1, email=$2
              WHERE id=$3
@@ -461,7 +460,7 @@ if(oldData.rows.length===0){
         }
 
 
-                await createAuditLog({
+                await createAuditLog(client,{
 
 user_id:req.user?.id || null,
 
@@ -479,6 +478,8 @@ ip_address:req.ip
 
 });
 
+ await client.query("COMMIT");
+
         res.status(200).json({
             message:"User updated successfully",
             user:result.rows[0]
@@ -486,18 +487,24 @@ ip_address:req.ip
 
 
     }catch(error){
+         await client.query("ROLLBACK");
         if(error.code === "23505"){
             return res.status(409).json({message:"Email is already in use"});
         }
 
         res.status(500).json({error:error.message});
     }
+    finally{
+    client.release();
+}
 }
 
 
 const deleteByID=async(req,res)=>
 {
+    const client = await pool.connect();
     try{
+        await client.query("BEGIN");
        const {id}=req.params;
         const oldUser = await pool.query(
 "SELECT * FROM users WHERE id=$1",
@@ -526,16 +533,27 @@ const deleteByID=async(req,res)=>
 
         }
 
-        await createAuditLog({
- user_id:req.user.id,
- action:"DELETE",
- entity:"users",
- entity_id:id,
- old_data:oldUser.rows[0],
- new_data:null,
- ip_address:req.ip
+ await createAuditLog(client,{
+    user_id:req.user?.id || null,
+    action:"DELETE",
+    entity:"users",
+    entity_id:id,
+    old_data:oldUser.rows[0],
+    new_data:null,
+    ip_address:req.ip
 });
 
+
+await client.query(
+`
+DELETE FROM users
+WHERE id=$1
+`,
+[id]
+);
+
+
+await client.query("COMMIT");
 
            res.status(200).json({
             message:"User deleted successfully"
@@ -546,22 +564,32 @@ const deleteByID=async(req,res)=>
     }catch(error)
     {
 
+await client.query("ROLLBACK");
+
            res.status(500).json({
             error:error.message
         });
 
     }
+    finally{
+
+client.release();
+
+}
 }
 
 const deleteAllUsers = async(req,res)=>{
 
-    try{
+    const client = await pool.connect();
 
-        const result = await pool.query(
+
+    try{
+await client.query("BEGIN");
+        const result = await client.query(
             "DELETE FROM users RETURNING id"
         );
 
-       await createAuditLog({
+       await createAuditLog(client,{
 
     user_id:req.user.id,
 
@@ -580,6 +608,7 @@ const deleteAllUsers = async(req,res)=>{
     ip_address:req.ip
 
 });
+await client.query("COMMIT")
 
 
 res.status(200).json({
@@ -592,6 +621,8 @@ res.status(200).json({
 
     }catch(error){
 
+        await client.query("ROLLBACK");
+
         console.log(error);
 
         res.status(500).json({
@@ -601,6 +632,11 @@ res.status(200).json({
         });
 
     }
+    finally{
+
+client.release();
+
+}
 
 };
 
